@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center overflow-hidden relative isolate"> {/* Додано isolate */}
+  <div class="min-h-screen flex flex-col items-center justify-center overflow-hidden relative isolate">
     <div class="absolute inset-0 z-0 bg-gradient-to-br from-blue-700 via-indigo-900 to-purple-900 dark:from-blue-900 dark:via-indigo-950 dark:to-purple-950 overflow-hidden">
       <div class="absolute -top-60 -left-60 w-[40rem] h-[40rem] bg-pink-500/20 rounded-full blur-3xl animate-blob"></div>
       <div class="absolute top-0 -right-24 w-[30rem] h-[30rem] bg-yellow-500/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
@@ -11,7 +11,7 @@
       <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-1 bg-gradient-to-r from-transparent via-indigo-400 to-transparent blur-sm"></div>
     </div>
 
-    <FallingParticles class="absolute inset-0 z-[5]" /> {/* z-index між фоном і контентом */}
+    <FallingParticles v-if="showParticles" class="absolute inset-0 z-[5]" />
 
     <div class="container relative z-10 px-5 py-6 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 max-w-6xl mx-auto">
       <div class="hidden lg:block lg:w-1/2 text-left">
@@ -185,10 +185,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 import logoUrl from '@/assets/logo.svg';
-import FallingParticles from '@/components/ui/FallingParticles.vue'; // ІМПОРТ КОМПОНЕНТА
+import FallingParticles from '@/components/ui/FallingParticles.vue';
 
 // Імпорт іконок з Heroicons
 import { 
@@ -198,12 +199,19 @@ import {
   ExclamationCircleIcon,
   EyeIcon,
   EyeSlashIcon,
-  SparklesIcon, // Ці три іконки використовуються в лівій частині
+  SparklesIcon,
   LanguageIcon,
   FilmIcon
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
+
+// Контроль анімації частинок для продуктивності
+const showParticles = ref(true);
+
+// Форма входу
 const email = ref('');
 const password = ref('');
 const rememberMe = ref(false);
@@ -211,25 +219,86 @@ const isLoading = ref(false);
 const errorMsg = ref('');
 const showPassword = ref(false);
 
+// Функція для обробки входу - ВИПРАВЛЕНО
 const handleLogin = async () => {
   isLoading.value = true;
   errorMsg.value = '';
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Дані для входу у правильному форматі
+    const credentials = {
+      username: email.value, // Email використовується як username для API
+      password: password.value
+    };
     
-    if (email.value === 'test@example.com' && password.value === 'password') {
-      router.push('/');
+    // Запам'ятовуємо користувача, якщо потрібно
+    if (rememberMe.value) {
+      localStorage.setItem('rememberMe', 'true');
+      localStorage.setItem('savedEmail', email.value);
     } else {
-      errorMsg.value = 'Неправильний email або пароль. Спробуйте ще раз.';
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('savedEmail');
+    }
+    
+    // Використовуємо метод login зі сховища auth замість безпосереднього виклику authService
+    const result = await authStore.login(credentials);
+    
+    if (result.success) {
+      console.log('Login successful:', result.data);
+      
+      // Перенаправлення на потрібну сторінку після успішного входу
+      const redirectPath = route.query.redirect || '/dashboard';
+      router.push(redirectPath);
+    } else {
+      errorMsg.value = result.error || 'Помилка під час входу';
     }
   } catch (error) {
-    errorMsg.value = 'Помилка сервера. Спробуйте пізніше.';
-    console.error('Помилка входу:', error);
+    console.error('Login error:', error);
+    
+    // Обробка помилок
+    if (error.response) {
+      // Помилки від сервера
+      if (error.response.status === 401) {
+        errorMsg.value = 'Неправильний email або пароль. Спробуйте ще раз.';
+      } else if (error.response.data && typeof error.response.data === 'object') {
+        // Обробка структурованих помилок від FastAPI
+        if (Array.isArray(error.response.data.detail)) {
+          // Якщо відповідь - масив помилок валідації
+          errorMsg.value = 'Помилка валідації даних. Перевірте введені дані.';
+          console.error('Validation errors:', error.response.data.detail);
+        } else if (error.response.data.detail) {
+          errorMsg.value = error.response.data.detail;
+        } else {
+          errorMsg.value = 'Помилка під час входу. Перевірте ваші дані.';
+        }
+      } else {
+        errorMsg.value = 'Помилка під час входу. Спробуйте ще раз.';
+      }
+    } else if (error.request) {
+      // Запит був надісланий, але відповіді не було
+      errorMsg.value = 'Сервер не відповідає. Перевірте підключення до Інтернету.';
+    } else {
+      // Інші помилки
+      errorMsg.value = 'Несподівана помилка. Спробуйте пізніше.';
+    }
   } finally {
     isLoading.value = false;
   }
 };
+
+// Підготовка сторінки
+const checkRememberedUser = () => {
+  if (localStorage.getItem('rememberMe') === 'true') {
+    const savedEmail = localStorage.getItem('savedEmail');
+    if (savedEmail) {
+      email.value = savedEmail;
+      rememberMe.value = true;
+    }
+  }
+};
+
+// Викликаємо перевірку при створенні компонента
+checkRememberedUser();
 </script>
 
 <style scoped>

@@ -1,10 +1,30 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import './assets/main.css' 
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import App from './App.vue';
+import router from './router';
+import './assets/main.css';
+import { useAuthStore } from './stores/auth';
 
-const app = createApp(App)
+const pinia = createPinia();
+const app = createApp(App);
 
-app.use(router)
+app.use(pinia);
+app.use(router);
 
-app.mount('#app')
+// Ініціалізація авторизації перед монтуванням додатка
+const authStore = useAuthStore();
+
+// Асинхронна ініціалізація додатка
+const initApp = async () => {
+  try {
+    // Завантажуємо профіль користувача, якщо є токен
+    await authStore.init();
+  } catch (error) {
+    console.error('Failed to initialize app:', error);
+  } finally {
+    // Монтуємо додаток після ініціалізації
+    app.mount('#app');
+  }
+};
+
+initApp();
