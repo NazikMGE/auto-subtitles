@@ -3,8 +3,8 @@
     <div class="max-w-md w-full space-y-10 bg-white dark:bg-slate-800 p-8 sm:p-12 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700">
       <div>
         <div class="flex justify-center mb-6">
-           <router-link to="/" class="flex items-center space-x-2">
-            <img :src="logoUrl" alt="AutoSubtitles Logo" class="h-8 md:h-10 w-auto mr-2"> <span class="text-2xl font-extrabold tracking-tight">
+           <router-link to="/" class="flex items-center space-x-2 animate-breath">
+            <img :src="logoUrl" alt="AutoSubtitles Logo" class="h-8 md:h-10 w-auto mr-2 "> <span class="text-2xl font-extrabold tracking-tight">
               <span class="text-slate-800 dark:text-white">Auto</span><span class="text-blue-600 dark:text-indigo-400">Subtitles</span>
             </span>
           </router-link>

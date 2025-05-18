@@ -1,8 +1,8 @@
 <template>
   <header class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg shadow-sm fixed top-0 left-0 right-0 z-[100] transition-colors duration-300">
     <nav class="main-container flex items-center justify-between h-16 md:h-20">
-      <router-link to="/" class="flex-shrink-0 flex items-center space-x-2">
-        <img :src="logoUrl" alt="AutoSubtitles Logo" class="h-6 md:h-8 w-auto mr-2">
+      <router-link to="/" class="flex-shrink-0 flex items-center space-x-2 animate-breath">
+        <img :src="logoUrl" alt="AutoSubtitles Logo" class="h-6 md:h-8 w-auto mr-2 ">
         <span class="text-xl font-extrabold tracking-tight">
           <span class="text-slate-800 dark:text-white">Auto</span><span class="text-blue-600 dark:text-indigo-400">Subtitles</span>
         </span>

@@ -36,7 +36,7 @@
             </h3>
           </div>
           <p class="text-slate-600 dark:text-slate-300 mb-5 leading-relaxed">
-            Для тих, хто цінує максимальну продуктивність та приватність, ми готуємо десктопний додаток. Він використовуватиме потужність вашого CPU/GPU для генерації субтитрів, зберігаючи всі дані локально.
+            Для тих, хто цінує максимальну продуктивність та приватність, ми готуємо десктопний додаток. Він використовуватиме потужність вашого CPU/GPU для генерації субтитрів.
           </p>
           <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400 mb-6">
             <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>Повний контроль над даними</li>

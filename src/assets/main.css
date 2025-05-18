@@ -63,3 +63,18 @@
   transform: translateY(10px);
   opacity: 0;
 }
+
+@keyframes breath {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05); /* Наскільки лого буде "збільшуватися" */
+    opacity: 0.9; /* Невелика зміна прозорості для плавності */
+  }
+}
+
+.animate-breath {
+  animation: breath 3s ease-in-out infinite; /* Тривалість 3 секунди, плавний початок/кінець, нескінченно */
+}
