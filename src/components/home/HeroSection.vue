@@ -37,17 +37,13 @@
           <BaseButton variant="primary" size="lg" @click="navigateToDashboard" class="bg-white hover:bg-slate-100 text-blue-700 dark:text-indigo-700 dark:bg-slate-50 dark:hover:bg-slate-200 shadow-xl !px-10 !py-4 text-lg">
             Панель керування
             <template #iconRight>
-              <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 -mr-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
+              <ArrowRightIcon class="ml-2 -mr-1 h-5 w-5" />
             </template>
           </BaseButton>
           <BaseButton variant="primary" size="lg" @click="navigateToNewProject" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-xl !px-10 !py-4 text-lg">
             Новий проект
             <template #iconRight>
-              <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 -mr-1 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-              </svg>
+              <PlusIcon class="ml-2 -mr-1 h-5 w-5" />
             </template>
           </BaseButton>
         </template>
@@ -75,6 +71,10 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '../ui/BaseButton.vue';
+import {
+  ArrowRightIcon,
+  PlusIcon
+} from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const authStore = useAuthStore();

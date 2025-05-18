@@ -29,17 +29,13 @@
           <BaseButton variant="primary" size="lg" @click="navigateToNewProject" class="!bg-gradient-to-r !from-blue-500 !to-indigo-600 hover:!from-blue-600 hover:!to-indigo-700 !border-none !text-white !px-12 !py-4 text-lg shadow-2xl">
             Створити Новий Проект
             <template #iconRight>
-              <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-              </svg>
+              <PlusIcon class="ml-2 h-5 w-5" />
             </template>
           </BaseButton>
           <BaseButton variant="secondary" size="lg" @click="navigateToMyProjects" class="!bg-white/10 !text-white !border-white/20 !px-12 !py-4 text-lg">
             Мої Проекти
             <template #iconRight>
-              <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-              </svg>
+              <DocumentTextIcon class="ml-2 h-5 w-5" />
             </template>
           </BaseButton>
         </div>
@@ -64,6 +60,11 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '../ui/BaseButton.vue';
+import {
+  PlusIcon,
+  CheckCircleIcon,
+  DocumentTextIcon
+} from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const authStore = useAuthStore();

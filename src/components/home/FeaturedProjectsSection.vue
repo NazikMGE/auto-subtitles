@@ -27,9 +27,7 @@
         >
           <div class="flex items-start justify-between mb-4">
             <div class="w-12 h-12 flex-shrink-0 rounded-lg bg-blue-100 dark:bg-indigo-500/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
+              <ChatBubbleLeftRightIcon class="h-7 w-7" />
             </div>
             <div class="text-sm text-slate-500 dark:text-slate-400">
               {{ formatDate(project.createdAt) }}
@@ -52,9 +50,7 @@
             
             <button @click="goToProject(project.id)" class="text-blue-600 dark:text-indigo-400 hover:text-blue-800 dark:hover:text-indigo-300 inline-flex items-center text-sm font-medium">
               Відкрити
-              <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
+              <ArrowRightIcon class="ml-1 h-4 w-4" />
             </button>
           </div>
         </div>
@@ -100,6 +96,11 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '../ui/BaseButton.vue';
+import {
+  ChatBubbleLeftRightIcon,
+  PlusIcon,
+  ArrowRightIcon
+} from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const authStore = useAuthStore();
