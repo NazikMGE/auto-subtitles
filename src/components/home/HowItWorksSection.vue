@@ -50,6 +50,5 @@
 </template>
 
 <script setup>
-import BaseButton from '../ui/BaseButton.vue';
 import assemblyAiLogoUrl from '@/assets/assemblyai.svg';
 </script>

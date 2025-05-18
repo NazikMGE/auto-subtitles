@@ -3,14 +3,7 @@
   <div class="flex flex-col items-center justify-center min-h-[calc(100vh-20rem)] text-center px-4 py-16 bg-primary">
     <div class="w-full max-w-sm md:max-w-md mx-auto mb-8 animate-fadeInUp" style="animation-delay: 100ms;">
       <img
-        v-if="theme.currentTheme.value === 'light'"
-        src="@/assets/404-illustration.svg"
-        alt="Сторінку не знайдено - світла тема"
-        class="w-full h-auto"
-      />
-      <img
-        v-else
-        src="@/assets/404-illustration.svg" alt="Сторінку не знайдено - темна тема"
+        src="@/assets/404-illustration.svg" alt="Сторінку не знайдено"
         class="w-full h-auto"
       />
       </div>
