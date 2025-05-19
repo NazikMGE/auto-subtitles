@@ -326,22 +326,45 @@ const handleRegister = async () => {
     } else {
       errorMsg.value = result?.error || 'Помилка під час реєстрації';
     }
-  } catch (error) {
+  } catch (error) 
+  {
     console.error('Помилка реєстрації:', error);
-    
-    if (error.response && error.response.data) {
-      // Обробка структурованих помилок від FastAPI
-      if (Array.isArray(error.response.data.detail)) {
+    isLoading.value = false;
+
+     if (error.response)
+     {
+      if (error.response.status === 400 && 
+        error.response.data && 
+        error.response.data.detail && 
+        (error.response.data.detail.includes("Email already registered") || 
+         error.response.data.detail.includes("email already registered"))) {
+      
+      errorMsg.value = 'Цей email вже зареєстрований. Спробуйте увійти в систему.';
+      
+      } else if (Array.isArray(error.response.data.detail)) {
+        // Обробка інших помилок валідації
+        const validationErrors = error.response.data.detail;
+        // Можна вивести більш конкретну помилку з масиву validationErrors
         errorMsg.value = 'Помилка валідації даних. Перевірте введені дані.';
+        
       } else if (error.response.data.detail) {
+        // Інші помилки з деталями
         errorMsg.value = error.response.data.detail;
+        
       } else {
+        // Загальна помилка
         errorMsg.value = 'Помилка під час реєстрації. Перевірте введені дані.';
       }
+     }
+     else if (error.request) {
+    // Запит відправлено, але відповіді не отримано
+      errorMsg.value = 'Сервер не відповідає. Перевірте з\'єднання з Інтернетом.';
     } else {
+      // Щось сталося під час налаштування запиту
       errorMsg.value = 'Помилка сервера. Спробуйте пізніше.';
     }
-  } finally {
+  } 
+  finally {
     isLoading.value = false;
   }
 };

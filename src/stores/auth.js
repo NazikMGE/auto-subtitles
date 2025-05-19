@@ -25,25 +25,39 @@ export const useAuthStore = defineStore('auth', () => {
   });
   // Методи
   async function loadUserProfile() {
-    if (!isAuthenticated.value) return null;
+  if (!isAuthenticated.value) return null;
+  
+  try {
+    loading.value = true;
+    const userData = await authService.getCurrentUser();
+    user.value = userData;
+    return userData;
+  } catch (err) {
+    console.error('Error loading user profile:', err);
+    error.value = 'Не вдалося завантажити профіль користувача';
     
-    try {
-      loading.value = true;
-      const userData = await authService.getCurrentUser();
-      user.value = userData;
-      return userData;
-    } catch (err) {
-      console.error('Error loading user profile:', err);
-      error.value = 'Не вдалося завантажити профіль користувача';
-      // Якщо профіль не завантажується, можливо, токен недійсний
-      if (err.response && err.response.status === 401) {
-        await logout(); // Автоматичний вихід при невалідному токені
-      }
+    // Важливе виправлення: якщо не вдалося завантажити профіль - 
+    // вважаємо користувача неавторизованим
+    if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+      console.log('Token is invalid or expired, logging out user');
+      await logout(); // Це оновить authStatus.value на false
       return null;
-    } finally {
-      loading.value = false;
     }
+    
+    // Додаткова перевірка на інші важливі помилки, 
+    // які можуть свідчити про недійсність токена
+    if (!err.response || err.response.status >= 500) {
+      // Якщо сервер недоступний або сталася серйозна помилка,
+      // краще не виходити автоматично, а просто повернути null
+      console.log('Server error, but keeping user session active');
+      return null;
+    }
+    
+    return null;
+  } finally {
+    loading.value = false;
   }
+}
 
   async function login(credentials) {
     try {
@@ -89,16 +103,34 @@ export const useAuthStore = defineStore('auth', () => {
       
       return { success: true, data: response };
     } catch (err) {
-      console.error('Registration error:', err);
-      
-      if (err.response && err.response.data) {
-        error.value = err.response.data.detail || 'Помилка під час реєстрації. Перевірте введені дані.';
+    console.error('Registration error:', err);
+    
+    if (err.response) {
+      if (err.response.status === 400 && 
+          err.response.data && 
+          err.response.data.detail && 
+          (err.response.data.detail.includes("Email already registered") || 
+           err.response.data.detail.includes("email already registered"))) {
+        
+        error.value = 'Цей email вже зареєстрований. Спробуйте увійти в систему.';
+        return { 
+          success: false, 
+          error: error.value, 
+          code: 'EMAIL_EXISTS',  // Додаємо код помилки для кращої обробки
+          details: err.response.data
+        };
+        
+      } else if (err.response.data && err.response.data.detail) {
+        error.value = err.response.data.detail;
       } else {
-        error.value = 'Сервер недоступний. Спробуйте пізніше.';
+        error.value = 'Помилка під час реєстрації. Перевірте введені дані.';
       }
-      
-      return { success: false, error: error.value };
-    } finally {
+    } else {
+      error.value = 'Сервер недоступний. Спробуйте пізніше.';
+    }
+    
+    return { success: false, error: error.value, details: err.response?.data };
+  } finally {
       loading.value = false;
     }
   }
@@ -119,14 +151,34 @@ export const useAuthStore = defineStore('auth', () => {
   
   // Ініціалізація сховища - викликається при запуску додатку
   async function init() {
-    // Перевіряємо токен у localStorage
-    const token = localStorage.getItem('token');
-    authStatus.value = !!token;
+  // Перевіряємо токен у localStorage
+  const token = localStorage.getItem('token');
+  
+  if (token) {
+    authStatus.value = true; // Попередньо встановлюємо як авторизований
     
-    if (authStatus.value) {
-      await loadUserProfile();
+    try {
+      // Намагаємося завантажити профіль
+      const profile = await loadUserProfile();
+      
+      // Якщо не вдалося завантажити профіль (повернувся null),
+      // але loadUserProfile не викликав logout(),
+      // встановлюємо authStatus відповідно до наявності даних
+      if (!profile && user.value === null) {
+        authStatus.value = false;
+        localStorage.removeItem('token'); // Видаляємо недійсний токен
+        console.log('Failed to load profile, clearing auth state');
+      }
+    } catch (e) {
+      // Щось пішло не так під час завантаження профілю
+      console.error('Error during auth initialization:', e);
+      authStatus.value = false;
+      localStorage.removeItem('token');
     }
+  } else {
+    authStatus.value = false;
   }
+}
 
   return {
     user,

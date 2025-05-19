@@ -9,7 +9,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000, // Таймаут 10 секунд
+  timeout: 5000, // Таймаут 10 секунд
 });
 
 // Додаємо інтерсептор для запитів
