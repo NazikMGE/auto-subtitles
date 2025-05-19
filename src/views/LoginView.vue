@@ -302,7 +302,6 @@ checkRememberedUser();
 </script>
 
 <style scoped>
-/* ВАШІ ПОТОЧНІ СТИЛІ ЗАЛИШАЮТЬСЯ ТУТ */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }

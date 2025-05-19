@@ -209,18 +209,6 @@ const userAvatarUrl = computed(() => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=random&color=fff&size=96&font-size=0.45`;
 });
 
-// Якщо авторизований користувач заходить на головну (/), ми його перенаправляємо на Dashboard
-watch(
-  () => [route.path, isLoggedIn.value],
-  ([path, isLogged]) => {
-    if (path === '/' && isLogged) {
-      // В реальному додатку цей код, можливо, є в router.beforeEach
-      // Можна розкоментувати за потреби
-      // router.push('/dashboard');
-    }
-  }
-);
-
 // Перенаправлення при кліку на логотип
 const logoTargetLink = computed(() => {
   return isLoggedIn.value ? '/dashboard' : '/';
@@ -263,7 +251,6 @@ const createNewProject = () => {
   router.push('/projects/new');
 };
 
-// Функція для виходу з системи - ЦЕ ВИПРАВЛЕННЯ
 const handleLogout = async () => {
   try {
     // Використовуємо метод logout зі сховища auth замість безпосереднього виклику authService

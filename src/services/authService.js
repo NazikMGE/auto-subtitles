@@ -5,7 +5,7 @@ import axios from 'axios';
 const authService = {
   /**
    * Реєстрація нового користувача
-   * @param {Object} userData - Дані для реєстрації (email, password, full_name)
+   * @param {Object} userData - Дані для реєстрації (email, password)
    * @returns {Promise} - Відповідь серверу з даними користувача і токеном
    */
   register: async (userData) => {

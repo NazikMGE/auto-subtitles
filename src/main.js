@@ -11,7 +11,6 @@ const app = createApp(App);
 app.use(pinia);
 app.use(router);
 
-// Ініціалізація авторизації перед монтуванням додатка
 const authStore = useAuthStore();
 
 // Асинхронна ініціалізація додатка

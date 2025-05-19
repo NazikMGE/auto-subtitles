@@ -3,13 +3,11 @@ import { ref, computed } from 'vue';
 import authService from '@/services/authService';
 
 export const useAuthStore = defineStore('auth', () => {
-  // Реактивний стан
   const user = ref(null);
   const loading = ref(false);
   const error = ref(null);
-  const authStatus = ref(!!localStorage.getItem('token')); // Реактивний стан автентифікації
+  const authStatus = ref(!!localStorage.getItem('token')); 
 
-  // Обчислювані властивості
   const isAuthenticated = computed(() => authStatus.value);
   
   const userInitials = computed(() => {
@@ -23,7 +21,6 @@ export const useAuthStore = defineStore('auth', () => {
       .toUpperCase()
       .slice(0, 2);
   });
-
   // Методи
   async function loadUserProfile() {
     if (!isAuthenticated.value) return null;
