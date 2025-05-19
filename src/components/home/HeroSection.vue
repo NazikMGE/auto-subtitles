@@ -82,6 +82,7 @@ const authStore = useAuthStore();
 // Обчислювані властивості для перевірки авторизації та отримання імені користувача
 const isLoggedIn = computed(() => authStore.isAuthenticated);
 const userName = computed(() => {
+  if (authStore.user?.first_name) return authStore.user.first_name;
   if (authStore.user?.full_name) return authStore.user.full_name;
   if (authStore.user?.name) return authStore.user.name;
   if (authStore.user?.email) return authStore.user.email.split('@')[0];

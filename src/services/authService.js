@@ -9,20 +9,31 @@ const authService = {
    * @returns {Promise} - Відповідь серверу з даними користувача і токеном
    */
   register: async (userData) => {
-    try {
-      const response = await api.post('/api/v1/users/register', userData);
-      
-      // Якщо API повертає токен одразу при реєстрації, зберігаємо його
-      if (response.data.access_token) {
-        localStorage.setItem('token', response.data.access_token);
-      }
-      
-      return response.data;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+  try {
+    // Генеруємо аватар на основі імені користувача (email)
+    const emailName = userData.email.split('@')[0];
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(emailName)}&background=random&color=fff&size=128&font-size=0.45`;
+    
+    // Додаємо згенерований аватар до даних користувача
+    const userDataWithAvatar = {
+      ...userData,
+      avatarUrl: avatarUrl
+    };
+    
+    // Надсилаємо запит на реєстрацію з аватаром
+    const response = await api.post('/api/v1/users/register', userDataWithAvatar);
+    
+    // Якщо API повертає токен одразу при реєстрації, зберігаємо його
+    if (response.data.access_token) {
+      localStorage.setItem('token', response.data.access_token);
     }
-  },
+    
+    return response.data;
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
+},
 
   /**
    * Вхід у систему

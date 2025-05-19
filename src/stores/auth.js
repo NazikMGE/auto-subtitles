@@ -180,6 +180,30 @@ export const useAuthStore = defineStore('auth', () => {
   }
 }
 
+async function updateUserAvatar(avatarUrl) {
+  try {
+    // Оновлюємо локальний об'єкт користувача
+    if (user.value) {
+      user.value = {
+        ...user.value,
+        avatarUrl: avatarUrl
+      };
+    }
+    
+    // Викликаємо подію для оповіщення всіх компонентів
+    // Це дозволить компонентам, що відслідковують цю подію, оновитися
+    window.dispatchEvent(new CustomEvent('user-avatar-updated', { 
+      detail: { avatarUrl } 
+    }));
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating user avatar:', error);
+    return false;
+  }
+}
+
+
   return {
     user,
     loading,
@@ -191,6 +215,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     loadUserProfile,
-    init
+    init,
+    updateUserAvatar
   };
 });
