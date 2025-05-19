@@ -13,7 +13,7 @@ const DashboardView = () => import('@/views/DashboardView.vue')
 // const ProjectView = () => import('@/views/ProjectView.vue')
 // const NewProjectView = () => import('@/views/NewProjectView.vue')
 const ProfileView = () => import('@/views/ProfileView.vue')
-//const SettingsView = () => import('@/views/SettingsView.vue')
+const SettingsView = () => import('@/views/SettingsView.vue')
 // const AnalyticsView = () => import('@/views/AnalyticsView.vue')
 
 const routes = [
@@ -44,7 +44,7 @@ const routes = [
       requiresGuest: true // Тільки для неавторизованих
     }
   },
-  
+ 
   // Захищені маршрути (вимагають авторизації)
   {
     path: '/dashboard',
@@ -64,6 +64,15 @@ const routes = [
       requiresAuth: true
     }
   },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsView,
+    meta: {
+      title: 'Налаштування - AutoSubtitles',
+      requiresAuth: true
+    }
+  },
   // Маршрут для неіснуючих сторінок (завжди останній)
   {
     path: '/:catchAll(.*)',
@@ -74,6 +83,7 @@ const routes = [
     }
   }
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),
