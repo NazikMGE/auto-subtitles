@@ -56,6 +56,16 @@
               </span>
             </router-link>
           </div>
+          
+          <!-- Повідомлення про сесію -->
+          <div 
+            v-if="sessionExpiredMsg" 
+            class="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-fade-in flex items-center"
+          >
+            <ExclamationTriangleIcon class="h-5 w-5 mr-2 text-amber-400" aria-hidden="true" />
+            <span class="text-sm text-amber-100">{{ sessionExpiredMsg }}</span>
+          </div>
+          
           <div class="text-center mb-6">
             <h2 class="text-2xl font-bold text-white">
               З поверненням!
@@ -185,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import logoUrl from '@/assets/logo.svg';
@@ -197,6 +207,7 @@ import {
   LockClosedIcon, 
   ArrowRightOnRectangleIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   EyeIcon,
   EyeSlashIcon,
   SparklesIcon,
@@ -218,16 +229,40 @@ const rememberMe = ref(false);
 const isLoading = ref(false);
 const errorMsg = ref('');
 const showPassword = ref(false);
+const sessionExpiredMsg = ref('');
 
-// Функція для обробки входу - ВИПРАВЛЕНО
+// Встановлюємо повідомлення про закінчення сесії
+onMounted(() => {
+  // Перевірка повідомлень URL-параметрах
+  if (route.query.message === 'session_expired') {
+    sessionExpiredMsg.value = 'Ваша сесія закінчилася через неактивність. Будь ласка, увійдіть знову.';
+  }
+  
+  // Перевірка, чи був користувач перенаправлений через потребу авторизації
+  if (route.query.redirect && !authStore.isAuthenticated) {
+    sessionExpiredMsg.value = 'Для доступу до цієї сторінки необхідно увійти в систему.';
+  }
+  
+  // Перевіряємо, чи потрібно запам'ятати користувача
+  checkRememberedUser();
+});
+
+// Функція для обробки входу - ПОКРАЩЕНА
 const handleLogin = async () => {
   isLoading.value = true;
   errorMsg.value = '';
+  sessionExpiredMsg.value = '';
   
   try {
+    // Валідація форми перед відправкою
+    if (!validateForm()) {
+      isLoading.value = false;
+      return;
+    }
+    
     // Дані для входу у правильному форматі
     const credentials = {
-      username: email.value, // Email використовується як username для API
+      username: email.value.trim(), // Email використовується як username для API
       password: password.value
     };
     
@@ -240,49 +275,87 @@ const handleLogin = async () => {
       localStorage.removeItem('savedEmail');
     }
     
-    // Використовуємо метод login зі сховища auth замість безпосереднього виклику authService
+    // Використовуємо метод login зі сховища auth
     const result = await authStore.login(credentials);
     
     if (result.success) {
       console.log('Login successful:', result.data);
       
+      // Встановлюємо час створення токена
+      localStorage.setItem('token_created_at', Date.now().toString());
+      
       // Перенаправлення на потрібну сторінку після успішного входу
       const redirectPath = route.query.redirect || '/dashboard';
       router.push(redirectPath);
     } else {
+      // Використовуємо структуроване повідомлення про помилку
       errorMsg.value = result.error || 'Помилка під час входу';
+      console.error('Login error details:', result.details);
     }
   } catch (error) {
     console.error('Login error:', error);
-    
-    // Обробка помилок
-    if (error.response) {
-      // Помилки від сервера
-      if (error.response.status === 401) {
-        errorMsg.value = 'Неправильний email або пароль. Спробуйте ще раз.';
-      } else if (error.response.data && typeof error.response.data === 'object') {
-        // Обробка структурованих помилок від FastAPI
-        if (Array.isArray(error.response.data.detail)) {
-          // Якщо відповідь - масив помилок валідації
-          errorMsg.value = 'Помилка валідації даних. Перевірте введені дані.';
-          console.error('Validation errors:', error.response.data.detail);
-        } else if (error.response.data.detail) {
-          errorMsg.value = error.response.data.detail;
-        } else {
-          errorMsg.value = 'Помилка під час входу. Перевірте ваші дані.';
-        }
-      } else {
-        errorMsg.value = 'Помилка під час входу. Спробуйте ще раз.';
-      }
-    } else if (error.request) {
-      // Запит був надісланий, але відповіді не було
-      errorMsg.value = 'Сервер не відповідає. Перевірте підключення до Інтернету.';
-    } else {
-      // Інші помилки
-      errorMsg.value = 'Несподівана помилка. Спробуйте пізніше.';
-    }
+    handleLoginError(error);
   } finally {
     isLoading.value = false;
+  }
+};
+
+// Функція для валідації форми
+const validateForm = () => {
+  // Валідація email
+  if (!email.value.trim()) {
+    errorMsg.value = 'Будь ласка, введіть email';
+    return false;
+  }
+  
+  // Перевіряємо формат email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.value.trim())) {
+    errorMsg.value = 'Будь ласка, введіть коректний email';
+    return false;
+  }
+  
+  // Валідація пароля
+  if (!password.value) {
+    errorMsg.value = 'Будь ласка, введіть пароль';
+    return false;
+  }
+  
+  return true;
+};
+
+// Функція для обробки помилок входу
+const handleLoginError = (error) => {
+  // Обробка помилок
+  if (error.status) {
+    // Використовуємо структуровану помилку
+    errorMsg.value = error.message;
+  } else if (error.response) {
+    // Помилки від сервера
+    if (error.response.status === 401) {
+      errorMsg.value = 'Неправильний email або пароль. Спробуйте ще раз.';
+    } else if (error.response.status === 429) {
+      errorMsg.value = 'Забагато спроб входу. Спробуйте пізніше.';
+    } else if (error.response.data && typeof error.response.data === 'object') {
+      // Обробка структурованих помилок від FastAPI
+      if (Array.isArray(error.response.data.detail)) {
+        // Якщо відповідь - масив помилок валідації
+        errorMsg.value = 'Помилка валідації даних. Перевірте введені дані.';
+        console.error('Validation errors:', error.response.data.detail);
+      } else if (error.response.data.detail) {
+        errorMsg.value = error.response.data.detail;
+      } else {
+        errorMsg.value = 'Помилка під час входу. Перевірте ваші дані.';
+      }
+    } else {
+      errorMsg.value = 'Помилка під час входу. Спробуйте ще раз.';
+    }
+  } else if (error.request) {
+    // Запит був надісланий, але відповіді не було
+    errorMsg.value = 'Сервер не відповідає. Перевірте підключення до Інтернету.';
+  } else {
+    // Інші помилки
+    errorMsg.value = 'Несподівана помилка. Спробуйте пізніше.';
   }
 };
 
@@ -296,9 +369,6 @@ const checkRememberedUser = () => {
     }
   }
 };
-
-// Викликаємо перевірку при створенні компонента
-checkRememberedUser();
 </script>
 
 <style scoped>

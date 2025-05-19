@@ -3,11 +3,13 @@ import { ref, computed } from 'vue';
 import authService from '@/services/authService';
 
 export const useAuthStore = defineStore('auth', () => {
+  // Реактивний стан
   const user = ref(null);
   const loading = ref(false);
   const error = ref(null);
-  const authStatus = ref(!!localStorage.getItem('token')); 
+  const authStatus = ref(!!localStorage.getItem('token')); // Реактивний стан автентифікації
 
+  // Обчислювані властивості
   const isAuthenticated = computed(() => authStatus.value);
   
   const userInitials = computed(() => {

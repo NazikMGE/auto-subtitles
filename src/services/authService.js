@@ -39,8 +39,9 @@ const authService = {
       console.log('Sending login data:', formData.toString()); // Для відладки
       
       // Безпосередній запит до API
+      const baseURL = api.defaults.baseURL || 'http://localhost:8000';
       const response = await axios.post(
-        'http://localhost:8000/api/v1/users/login', 
+        `${baseURL}/api/v1/users/login`, 
         formData.toString(), 
         {
           headers: {
