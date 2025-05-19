@@ -12,8 +12,8 @@ const DashboardView = () => import('@/views/DashboardView.vue')
 // const MyProjectsView = () => import('@/views/MyProjectsView.vue')
 // const ProjectView = () => import('@/views/ProjectView.vue')
 // const NewProjectView = () => import('@/views/NewProjectView.vue')
-// const ProfileView = () => import('@/views/ProfileView.vue')
-// const SettingsView = () => import('@/views/SettingsView.vue')
+const ProfileView = () => import('@/views/ProfileView.vue')
+//const SettingsView = () => import('@/views/SettingsView.vue')
 // const AnalyticsView = () => import('@/views/AnalyticsView.vue')
 
 const routes = [
@@ -53,6 +53,15 @@ const routes = [
     meta: {
       title: 'Панель керування - AutoSubtitles',
       requiresAuth: true // Вимагає авторизації
+    }
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: ProfileView,
+    meta: {
+      title: 'Профіль - AutoSubtitles',
+      requiresAuth: true
     }
   },
   // Маршрут для неіснуючих сторінок (завжди останній)
