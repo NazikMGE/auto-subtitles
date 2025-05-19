@@ -193,7 +193,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useToast } from '@/composables/useToast';
+import api from '@/services/api';
 import {
   CameraIcon,
   LockClosedIcon,
@@ -202,8 +202,27 @@ import {
 
 const router = useRouter();
 const authStore = useAuthStore();
-const toast = useToast();
 const avatarInputRef = ref(null);
+
+// Створюємо простий composable для сповіщень
+const useToast = () => {
+  const success = (message) => {
+    // Використовуємо alert для простоти, в реальному додатку тут мав би бути компонент сповіщень
+    alert(`Успіх: ${message}`);
+  };
+  
+  const error = (message) => {
+    // Використовуємо alert для простоти, в реальному додатку тут мав би бути компонент сповіщень
+    alert(`Помилка: ${message}`);
+  };
+  
+  return {
+    success,
+    error
+  };
+};
+
+const toast = useToast();
 
 // Дані користувача з authStore
 const userEmail = computed(() => {
@@ -228,9 +247,42 @@ const userName = computed(() => {
 });
 
 const userAvatarUrl = computed(() => {
-  if (authStore.user?.avatarUrl) return authStore.user.avatarUrl;
+  // Перевіряємо чи є аватар у користувача
+  if (authStore.user?.avatarUrl) {
+    // Додаємо параметр запиту з часом для запобігання кешуванню
+    const timestamp = new Date().getTime();
+    const baseUrl = import.meta.env.VITE_API_URL || '';
+    let avatarPath = authStore.user.avatarUrl;
+    
+    // Виводимо додаткову інформацію для відладки
+    console.log('Avatar path from API:', avatarPath);
+    console.log('Base URL:', baseUrl);
+    
+    // Якщо avatarUrl вже має повний шлях з протоколом (http/https)
+    if (avatarPath.startsWith('http')) {
+      return `${avatarPath}${avatarPath.includes('?') ? '&' : '?'}t=${timestamp}`;
+    }
+    
+    // Переконуємося, що шлях починається зі слеша
+    if (!avatarPath.startsWith('/')) {
+      avatarPath = '/' + avatarPath;
+    }
+    
+    // Видаляємо зайвий слеш між baseUrl та avatarPath
+    if (baseUrl.endsWith('/') && avatarPath.startsWith('/')) {
+      avatarPath = avatarPath.substring(1);
+    }
+    
+    // Формуємо повний URL
+    const fullUrl = `${baseUrl}${avatarPath}${avatarPath.includes('?') ? '&' : '?'}t=${timestamp}`;
+    console.log('Final avatar URL:', fullUrl);
+    return fullUrl;
+  }
+  
   // Генеруємо аватар на основі імені користувача
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=random&color=fff&size=128&font-size=0.45`;
+  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=random&color=fff&size=128&font-size=0.45`;
+  console.log('Using fallback avatar URL:', fallbackUrl);
+  return fallbackUrl;
 });
 
 // Статистика користувача
@@ -250,6 +302,77 @@ const personalInfo = ref({
 
 const originalPersonalInfo = ref({...personalInfo.value});
 const personalInfoLoading = ref(false);
+const avatarLoading = ref(false);
+
+// Метод для обробки завантаження аватара
+const onAvatarSelected = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  // Перевірка типу файлу
+  if (!file.type.startsWith('image/')) {
+    toast.error('Дозволені лише файли зображень');
+    return;
+  }
+  
+  // Перевірка розміру файлу (макс. 2МБ)
+  const maxSize = 2 * 1024 * 1024; // 2МБ в байтах
+  if (file.size > maxSize) {
+    toast.error('Розмір файлу не повинен перевищувати 2МБ');
+    return;
+  }
+  
+  avatarLoading.value = true;
+  
+  try {
+    // Створення FormData для завантаження файлу
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Відправка файлу на сервер
+    // У реальному додатку тут був би запит до API
+    /*
+    const response = await api.post('/api/v1/users/me/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    // Оновлення даних користувача у сховищі
+    if (response.data && response.data.avatarUrl) {
+      // Оновити дані користувача в authStore
+      await authStore.loadUserProfile();
+      toast.success('Аватар успішно оновлено');
+    }
+    */
+    
+    // Для демонстрації просто імітуємо запит
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Оновлюємо локальний URL аватара для демонстрації
+    // В реальному додатку це мало б надходити з відповіді сервера
+    const fakeUrl = URL.createObjectURL(file);
+    toast.success('Аватар успішно оновлено');
+    
+    // Оновити дані користувача в authStore (імітація)
+    if (authStore.user) {
+      authStore.user = {
+        ...authStore.user,
+        avatarUrl: fakeUrl
+      };
+    }
+    
+  } catch (error) {
+    console.error('Помилка при завантаженні аватара:', error);
+    toast.error('Не вдалося завантажити аватар');
+  } finally {
+    avatarLoading.value = false;
+    // Скидаємо вибір файлу, щоб можна було повторно вибрати той самий файл
+    if (avatarInputRef.value) {
+      avatarInputRef.value.value = '';
+    }
+  }
+};
 
 // Завантаження даних при створенні компонента
 onMounted(async () => {
@@ -288,17 +411,31 @@ const handleAvatarUpload = () => {
   }
 };
 
-
 // Методи для роботи з особистою інформацією
 const savePersonalInfo = async () => {
   personalInfoLoading.value = true;
   
   try {
+    // Створення даних для оновлення
+    const updateData = {
+      first_name: personalInfo.value.firstName,
+      last_name: personalInfo.value.lastName
+    };
+    
     // Тут було б збереження даних через API
-    // const response = await api.put('/api/v1/users/me', personalInfo.value);
+    // const response = await api.put('/api/v1/users/me', updateData);
     
     // Імітуємо запит до сервера
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Оновлюємо дані користувача в authStore (імітація)
+    if (authStore.user) {
+      authStore.user = {
+        ...authStore.user,
+        first_name: updateData.first_name,
+        last_name: updateData.last_name
+      };
+    }
     
     // Оновлюємо копію для можливості скасування змін
     originalPersonalInfo.value = {...personalInfo.value};

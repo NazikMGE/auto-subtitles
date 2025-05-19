@@ -83,7 +83,7 @@
                 </div>
                 <div class="border-t border-slate-200 dark:border-slate-700 py-1">
                   <button @click="handleLogout" class="flex items-center w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:text-red-600 dark:hover:text-red-400 group" role="menuitem" tabindex="-1">
-                    <ArrowRightStartOnRectangleIcon class="h-5 w-5 mr-3 text-slate-400 dark:text-slate-500 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                    <ArrowRightOnRectangleIcon class="h-5 w-5 mr-3 text-slate-400 dark:text-slate-500 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
                     Вийти
                   </button>
                 </div>
@@ -150,7 +150,7 @@
                   {{ item.name }}
                 </router-link>
               <button @click="handleLogoutAndCloseMenu" class="flex items-center w-full text-left px-3 py-2.5 rounded-md text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/80 hover:text-red-600 dark:hover:text-red-400 group">
-                  <ArrowRightStartOnRectangleIcon class="h-5 w-5 mr-3 text-slate-500 dark:text-slate-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                  <ArrowRightOnRectangleIcon class="h-5 w-5 mr-3 text-slate-500 dark:text-slate-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
                   Вийти
                 </button>
             </div>
@@ -172,14 +172,22 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import logoUrl from '@/assets/logo.svg';
 import {
-  Bars3Icon, XMarkIcon, BellIcon, PlusIcon, HomeIcon, VideoCameraIcon,
-  Cog6ToothIcon, ChartBarIcon, UserCircleIcon,
-  ArrowRightStartOnRectangleIcon, InformationCircleIcon
+  Bars3Icon, 
+  XMarkIcon, 
+  BellIcon, 
+  PlusIcon, 
+  HomeIcon, 
+  VideoCameraIcon,
+  Cog6ToothIcon, 
+  ChartBarIcon, 
+  UserCircleIcon,
+  ArrowRightOnRectangleIcon, 
+  InformationCircleIcon
 } from '@heroicons/vue/24/outline';
 
 // Ініціалізація сховища авторизації
@@ -187,7 +195,7 @@ const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-// Використання стану авторизації з Pinia store - ЦЕ ВИПРАВЛЕННЯ
+// Використання стану авторизації з Pinia store
 const isLoggedIn = computed(() => authStore.isAuthenticated);
 const user = computed(() => authStore.user);
 
@@ -195,6 +203,9 @@ const user = computed(() => authStore.user);
 const userName = computed(() => {
   if (user.value?.full_name) return user.value.full_name;
   if (user.value?.name) return user.value.name;
+  if (user.value?.first_name || user.value?.last_name) {
+    return `${user.value.first_name || ''} ${user.value.last_name || ''}`.trim();
+  }
   if (user.value?.email) return user.value.email.split('@')[0];
   return 'Користувач';
 });
@@ -204,11 +215,24 @@ const userEmail = computed(() => {
 });
 
 const userAvatarUrl = computed(() => {
-  if (user.value?.avatarUrl) return user.value.avatarUrl;
+  if (authStore.user?.avatarUrl) {
+    // Додаємо параметр запиту з часом для запобігання кешуванню
+    const timestamp = new Date().getTime();
+    const baseUrl = import.meta.env.VITE_API_URL || '';
+    const avatarPath = authStore.user.avatarUrl;
+    
+    // Якщо avatarUrl вже має повний шлях з протоколом (http/https)
+    if (avatarPath.startsWith('http')) {
+      return `${avatarPath}${avatarPath.includes('?') ? '&' : '?'}t=${timestamp}`;
+    }
+    
+    // Для відносних шляхів до аватарки
+    return `${baseUrl}${avatarPath}${avatarPath.includes('?') ? '&' : '?'}t=${timestamp}`;
+  }
+  
   // Генеруємо аватар на основі імені користувача
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName.value)}&background=random&color=fff&size=96&font-size=0.45`;
 });
-
 // Перенаправлення при кліку на логотип
 const logoTargetLink = computed(() => {
   return isLoggedIn.value ? '/dashboard' : '/';
@@ -267,15 +291,23 @@ const handleLogout = async () => {
 };
 
 // Функція для виходу з системи і закриття мобільного меню
-const handleLogoutAndCloseMenu = () => {
-  handleLogout();
+const handleLogoutAndCloseMenu = async () => {
+  await handleLogout();
   closeMobileMenu();
 };
 
 // Ініціалізація - завантаження профілю користувача, якщо вже авторизований
-if (isLoggedIn.value && !user.value) {
-  authStore.loadUserProfile();
-}
+onMounted(async () => {
+  try {
+    if (isLoggedIn.value) {
+      // Примусово оновлюємо профіль користувача при кожному монтуванні
+      await authStore.loadUserProfile();
+      console.log('Profile loaded successfully:', authStore.user);
+    }
+  } catch (error) {
+    console.error('Error loading user profile during initialization:', error);
+  }
+});
 </script>
 
 <style scoped>
