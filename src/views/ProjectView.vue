@@ -489,7 +489,7 @@ const loadSubtitlesContent = async () => {
   }
 };
 
-// Нова функція для завантаження оригінального файлу
+// Оновлена функція для завантаження оригінального файлу
 const downloadOriginalFile = async () => {
   if (!project.value || !project.value.fileId) {
     addErrorNotification('Ідентифікатор файлу не знайдено', { 
@@ -500,53 +500,51 @@ const downloadOriginalFile = async () => {
   }
   
   try {
-    // Створюємо URL для завантаження файлу
-    const fileUrl = `${api.defaults.baseURL}/api/v1/files/download/${project.value.fileId}`;
-    
-    // Створюємо посилання для завантаження
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = project.value.originalFilename || 'media_file';
-    
-    // Додаємо токен авторизації до запиту через атрибут даних
-    link.setAttribute('data-token', `Bearer ${authStore.token}`);
-    
-    // Імітуємо click для запуску завантаження
-    document.body.appendChild(link);
-    
-    // Перехоплюємо клік і робимо запит з потрібними заголовками
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      
-      // Створюємо запит з правильними заголовками
-      fetch(fileUrl, {
-        headers: {
-          'Authorization': `Bearer ${authStore.token}`
-        }
-      })
-      .then(response => response.blob())
-      .then(blob => {
-        // Створюємо локальний URL для завантаження
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = project.value.originalFilename || 'media_file';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(err => {
-        console.error('Помилка при завантаженні файлу:', err);
-        addErrorNotification('Не вдалося завантажити медіафайл', { 
-          playSound: true, 
-          autoOpen: true 
-        });
-      });
+    // Показуємо сповіщення про початок завантаження
+    addInfoNotification('Підготовка до завантаження файлу...', { 
+      playSound: false, 
+      autoOpen: false,
+      timeout: 2000
     });
     
+    // Варіант 1: Використання axios для прямого завантаження з правильними заголовками
+    const response = await api.get(`/api/v1/files/download/${project.value.fileId}`, {
+      responseType: 'blob', // Важливо для бінарних даних
+      headers: {
+        'Accept': '*/*', // Приймаємо будь-який тип контенту
+      }
+    });
+    
+    // Отримуємо тип контенту з відповіді
+    const contentType = response.headers['content-type'] || 'application/octet-stream';
+    const contentDisposition = response.headers['content-disposition'] || '';
+    
+    // Намагаємося визначити ім'я файлу з заголовків, якщо можливо
+    let fileName = project.value.originalFilename || 'media_file';
+    const fileNameMatch = contentDisposition.match(/filename=["']?([^"']+)["']?/);
+    if (fileNameMatch && fileNameMatch[1]) {
+      fileName = fileNameMatch[1];
+    }
+    
+    // Створюємо Blob з правильним типом контенту
+    const blob = new Blob([response.data], { type: contentType });
+    
+    // Створюємо URL і посилання для завантаження
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    
+    // Додаємо до документа, імітуємо клік і видаляємо
+    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    
+    // Затримка перед очищенням для гарантованого початку завантаження
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
     
     addSuccessNotification('Завантаження медіафайлу почалося', { 
       playSound: true, 
@@ -555,9 +553,30 @@ const downloadOriginalFile = async () => {
     
   } catch (error) {
     console.error('Помилка при завантаженні файлу:', error);
-    addErrorNotification('Не вдалося завантажити медіафайл', { 
+    
+    // Детальніша обробка помилок
+    let errorMessage = 'Не вдалося завантажити медіафайл';
+    
+    if (error.response) {
+      // Помилка відповіді сервера
+      const status = error.response.status;
+      if (status === 404) {
+        errorMessage = 'Файл не знайдено на сервері';
+      } else if (status === 403) {
+        errorMessage = 'Немає доступу до файлу';
+      } else if (status === 401) {
+        errorMessage = 'Потрібна авторизація для завантаження файлу';
+        // Можна додати перенаправлення на сторінку авторизації
+        // router.push('/login');
+      }
+    } else if (error.request) {
+      // Запит був відправлений, але відповідь не отримана
+      errorMessage = 'Сервер не відповідає. Перевірте з\'єднання з мережею';
+    }
+    
+    addErrorNotification(errorMessage, { 
       playSound: true, 
-      autoOpen: false 
+      autoOpen: true 
     });
   }
 };
@@ -736,16 +755,6 @@ const loadProjectStats = async () => {
       // Оновлюємо проект даними про статистику
       project.value.resultStats = statsResponse.data.resultStats;
       console.log("Updated stats:", project.value.resultStats);
-      
-      // Якщо проект був завершений і має мову, оновлюємо відображення
-      if (project.value.resultStats.detected_language) {
-        // Можемо показати повідомлення про оновлення статистики
-        addInfoNotification(`Оновлено інформацію про мову: ${getLanguageName(project.value.resultStats.detected_language)}`, {
-          playSound: false,
-          autoOpen: false,
-          timeout: 3000
-        });
-      }
     }
   } catch (error) {
     console.warn("Не вдалося оновити статистику:", error);
@@ -1089,10 +1098,6 @@ watch(() => project.value?.status, (newStatus) => {
 </script>
 
 <style scoped>
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

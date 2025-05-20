@@ -405,7 +405,6 @@ const loggedOutUserNavigation = [
 const loggedInUserNavigation = [
   { name: 'Панель керування', href: '/dashboard', icon: HomeIcon },
   { name: 'Мої проекти', href: '/my-projects', icon: VideoCameraIcon },
-  { name: 'Аналітика', href: '/analytics', icon: ChartBarIcon },
 ];
 
 const userMenuItems = [
