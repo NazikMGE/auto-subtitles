@@ -27,7 +27,7 @@
         >
           <div class="flex items-start justify-between mb-4">
             <div class="w-12 h-12 flex-shrink-0 rounded-lg bg-blue-100 dark:bg-indigo-500/20 text-blue-600 dark:text-indigo-400 flex items-center justify-center">
-              <ChatBubbleLeftRightIcon class="h-7 w-7" />
+              <component :is="getFileIcon(project)" class="h-7 w-7" />
             </div>
             <div class="text-sm text-slate-500 dark:text-slate-400">
               {{ formatDate(project.createdAt) }}
@@ -87,6 +87,20 @@
           </template>
         </BaseButton>
       </div>
+      
+      <!-- Індикатор обмеження безкоштовного тарифу -->
+      <div v-if="projectsCount >= freeProjectsLimit && userTier === 'free'" 
+           class="mt-8 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-lg p-4 text-center">
+        <div class="flex items-center justify-center mb-2">
+          <ExclamationTriangleIcon class="h-5 w-5 text-yellow-500 dark:text-yellow-400 mr-2" />
+          <p class="text-yellow-700 dark:text-yellow-300 font-medium">
+            Ви досягли ліміту одночасної обробки для безкоштовного тарифу
+          </p>
+        </div>
+        <p class="text-sm text-yellow-600 dark:text-yellow-400">
+          Нові проекти будуть поставлені в чергу до завершення поточних або можете оновитися до преміум-тарифу.
+        </p>
+      </div>
     </div>
   </section>
 </template>
@@ -96,65 +110,141 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import BaseButton from '../ui/BaseButton.vue';
+import api from '@/services/api';
 import {
   ChatBubbleLeftRightIcon,
   PlusIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  DocumentTextIcon,
+  FilmIcon,
+  MusicalNoteIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Дані для демонстрації на головній сторінці 
-// У реальному додатку їх потрібно завантажувати з API
+// Стан компонента
 const projects = ref([]);
 const isLoading = ref(true);
+const errorMessage = ref('');
 
-// Замість цієї функції потрібно буде реалізувати справжній запит до API
+// Дані про обмеження тарифу
+const freeProjectsLimit = 5; // Ліміт для безкоштовного тарифу
+const projectsCount = ref(0); // Загальна кількість активних проектів
+const userTier = computed(() => authStore.user?.tier || 'free'); // Тариф користувача
+
+// Реальна функція запиту до API для отримання проектів користувача
 const fetchProjects = async () => {
   isLoading.value = true;
   
   try {
-    // Тут має бути запит до API
-    // Наприклад: const response = await api.get('/api/v1/jobs?limit=3&sort=desc');
-    
-    // Імітуємо затримку мережі
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Тимчасові дані для демонстрації
-    projects.value = [
-      {
-        id: '1',
-        originalFilename: 'Презентація продукту.mp4',
-        description: 'Відео презентації нового продукту для маркетингової кампанії',
-        status: 'completed',
-        createdAt: new Date(Date.now() - 3600000 * 24) // вчора
-      },
-      {
-        id: '2',
-        originalFilename: 'Інтерв\'ю з розробником.mp3',
-        description: 'Аудіо-інтерв\'ю для корпоративного блогу',
-        status: 'processing_online',
-        createdAt: new Date(Date.now() - 3600000 * 2) // 2 години тому
-      },
-      {
-        id: '3',
-        originalFilename: 'Вебінар-2023.mp4',
-        description: null,
-        status: 'queued',
-        createdAt: new Date() // зараз
+    // Запит до API для отримання останніх завдань користувача
+    const response = await api.get('/api/v1/jobs/', {
+      params: {
+        limit: 3,    // Кількість завдань для відображення
+        offset: 0    // Початок з першого завдання
+        // Не потрібно передавати sort_by і sort_dir, оскільки бекенд 
+        // вже сортує за createdAt в зворотному порядку
       }
-    ];
+    });
+    
+    // Отримуємо дані з відповіді
+    const jobs = response.data; // Відповідь тепер є масивом
+    
+    // Зберігаємо загальну кількість активних проектів
+    projectsCount.value = jobs.length; // Або можна зробити окремий запит для отримання загальної кількості
+    
+    // Перевіряємо структуру даних
+    if (Array.isArray(jobs)) {
+      // Додаткова обробка для отримання повної інформації про файли
+      const projectsWithFiles = await Promise.all(
+        jobs.map(async (job) => {
+          try {
+            // Отримуємо інформацію про файл для кожного завдання
+            const fileResponse = await api.get(`/api/v1/files/${job.fileId}`);
+            const fileData = fileResponse.data;
+            
+            // Об'єднуємо дані завдання з даними файлу
+            return {
+              id: job.id,
+              fileId: job.fileId,
+              originalFilename: fileData.originalFilename || 'Файл без назви',
+              contentType: fileData.contentType,
+              fileSize: fileData.fileSize,
+              createdAt: job.createdAt || fileData.uploadDate, // Зверніть увагу на поле дати
+              status: job.status || 'unknown',
+              mode: job.mode,
+              language: job.language,
+              description: job.description
+            };
+          } catch (fileError) {
+            console.warn(`Не вдалося отримати дані файлу для завдання ${job.id}:`, fileError);
+            // Повертаємо завдання без додаткової інформації про файл
+            return {
+              id: job.id,
+              fileId: job.fileId,
+              originalFilename: 'Файл без назви',
+              createdAt: job.createdAt,
+              status: job.status || 'unknown',
+              mode: job.mode,
+              language: job.language,
+              description: job.description
+            };
+          }
+        })
+      );
+      
+      // Оновлюємо стан з отриманими проектами
+      projects.value = projectsWithFiles;
+    } else {
+      console.warn('Неочікувана структура даних від API:', jobs);
+      projects.value = [];
+    }
   } catch (error) {
     console.error('Помилка при завантаженні проектів:', error);
+    
+    // Деталізація помилки для відладки
+    if (error.response) {
+      console.error('Відповідь сервера:', error.response.data);
+      console.error('Статус:', error.response.status);
+      
+      if (error.response.status === 401) {
+        errorMessage.value = 'Необхідна авторизація для перегляду проектів';
+      } else {
+        errorMessage.value = error.response.data?.detail || 'Помилка при завантаженні проектів';
+      }
+    } else if (error.request) {
+      console.error('Запит був зроблений, але відповідь не отримана:', error.request);
+      errorMessage.value = 'Сервер не відповідає. Перевірте підключення до мережі';
+    } else {
+      console.error('Помилка при налаштуванні запиту:', error.message);
+      errorMessage.value = 'Не вдалося завантажити проекти';
+    }
+    
     projects.value = [];
   } finally {
     isLoading.value = false;
   }
 };
 
+// Визначення відповідної іконки на основі типу файлу
+const getFileIcon = (project) => {
+  if (!project.contentType) return ChatBubbleLeftRightIcon;
+  
+  if (project.contentType.startsWith('audio/')) {
+    return MusicalNoteIcon;
+  } else if (project.contentType.startsWith('video/')) {
+    return FilmIcon;
+  } else {
+    return DocumentTextIcon;
+  }
+};
+
 // Форматуємо дату для відображення
 const formatDate = (dateString) => {
+  if (!dateString) return '';
+  
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now - date;
@@ -208,6 +298,16 @@ const getStatusClass = (status) => {
 
 // Отримуємо опис проекту за замовчуванням, якщо відсутній
 const getDefaultDescription = (project) => {
+  // Якщо є contentType, використовуємо його
+  if (project.contentType) {
+    if (project.contentType.startsWith('audio/')) {
+      return 'Аудіофайл для транскрипції';
+    } else if (project.contentType.startsWith('video/')) {
+      return 'Відеофайл для створення субтитрів';
+    }
+  }
+  
+  // Інакше намагаємося визначити за розширенням файлу
   const ext = project.originalFilename?.split('.').pop()?.toLowerCase();
   
   if (ext === 'mp4' || ext === 'mov' || ext === 'avi') {
@@ -222,6 +322,7 @@ const getDefaultDescription = (project) => {
 
 // Функції для навігації
 const goToProject = (projectId) => {
+  // Переходимо на сторінку проекту
   router.push(`/projects/${projectId}`);
 };
 
