@@ -9,9 +9,9 @@ const NotFoundView = () => import('@/views/NotFoundView.vue')
 
 // Захищені сторінки (вимагають авторизації)
 const DashboardView = () => import('@/views/DashboardView.vue')
-// const MyProjectsView = () => import('@/views/MyProjectsView.vue')
-// const ProjectView = () => import('@/views/ProjectView.vue')
-// const NewProjectView = () => import('@/views/NewProjectView.vue')
+const MyProjectsView = () => import('@/views/MyProjectsView.vue')
+const ProjectView = () => import('@/views/ProjectView.vue')
+const NewProjectView = () => import('@/views/NewProjectView.vue')
 const ProfileView = () => import('@/views/ProfileView.vue')
 const SettingsView = () => import('@/views/SettingsView.vue')
 // const AnalyticsView = () => import('@/views/AnalyticsView.vue')
@@ -56,6 +56,15 @@ const routes = [
     }
   },
   {
+    path: '/my-projects',
+    name: 'my-projects',
+    component: MyProjectsView,
+    meta: {
+      title: 'Мої проекти - AutoSubtitles',
+      requiresAuth: true
+    }
+  },
+  {
     path: '/profile',
     name: 'profile',
     component: ProfileView,
@@ -70,6 +79,24 @@ const routes = [
     component: SettingsView,
     meta: {
       title: 'Налаштування - AutoSubtitles',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/projects/new',
+    name: 'new-project',
+    component: NewProjectView,
+    meta: {
+      title: 'Новий проект - AutoSubtitles',
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/projects/:id',
+    name: 'project-details',
+    component: ProjectView,
+    meta: {
+      title: 'Деталі проекту - AutoSubtitles',
       requiresAuth: true
     }
   },

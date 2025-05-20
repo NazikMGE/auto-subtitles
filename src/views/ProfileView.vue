@@ -677,11 +677,6 @@ const formatDate = (date) => {
 </script>
 
 <style scoped>
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
 /* Пульсуючі анімації для фонових елементів */
 @keyframes pulse-slow {
   0%, 100% { opacity: 0.4; transform: scale(1); }
